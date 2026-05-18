@@ -3,6 +3,7 @@ from alembic import context
 from logging.config import fileConfig
 from sqlalchemy import engine_from_config
 from sqlalchemy import pool
+from dotenv import load_dotenv
 
 from src.core.base_model import Base
 from src.activity_types.model import ActivityType
@@ -20,6 +21,11 @@ from src.educational_forms.model import EducationalForm
 from src.educational_levels.model import EducationalLevel
 from src.indicators.model import Indicator
 from src.map_cors.model import MapCore
+from src.study_plans.model import StudyPlan
+
+from src.discipline_block_control_types.model import (
+    DisciplineBlockControlType
+)
 
 # this is the Alembic Config object, which provides
 # access to the values within the .ini file in use.
@@ -36,8 +42,10 @@ if config.config_file_name is not None:
 # target_metadata = mymodel.Base.metadata
 
 target_metadata = Base.metadata
+load_dotenv()
 database_url = os.getenv('DATABASE_URL')
 config.set_main_option('sqlalchemy.url', database_url)
+print(database_url)
 
 # other values from the config, defined by the needs of env.py,
 # can be acquired:
