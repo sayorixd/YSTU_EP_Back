@@ -72,6 +72,18 @@ def calculate_hours(discipline: Discipline) -> Dict[str, float]:
 @router.post('/validate-up', response_model=ValidationResponse)
 def validate_up(request: List[Row]) -> ValidationResponse:
     validation_results = []
+    
+    # Проверка на пустой ввод
+    if not request or len(request) == 0:
+        return ValidationResponse(
+            isValid=False,
+            results=[ValidationResult(
+                message="Нет данных для проверки. Добавьте дисциплины в учебный план.",
+                severity=ValidationSeverity.BLOCKING,
+                details={}
+            )]
+        )
+    
     semesters_count = len(request[0].data)
     
     # ===== ПРОВЕРКИ БЛОКИРУЮЩИХ КРИТЕРИЕВ =====
