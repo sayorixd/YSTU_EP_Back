@@ -9,7 +9,8 @@ class CompetencyLoad(BaseModel):
 class DisciplineBlockLoad(BaseModel):
     discipline_id: Annotated[int, Field(gt=0)]
     credit_units: Annotated[int, Field(gt=0, example=3)]
-    control_type_id: Annotated[int, Field(gt=0)]
+    # control_type_id: Annotated[int, Field(gt=0)]
+    control_type_ids: list[int]
     lecture_hours: Annotated[int, Field(gte=0, example=40)]
     practice_hours: Annotated[int, Field(gte=0, example=40)]
     lab_hours: Annotated[int, Field(gte=0, example=40)]
@@ -66,7 +67,7 @@ class DisciplineBlockUnload(BaseModel):
     id: Annotated[int, Field(example=1)]
     discipline: DisciplineUnload
     credit_units: Annotated[int, Field(example=3)]
-    control_type: ControlTypeUnload
+    control_types: list[ControlTypeUnload]
     lecture_hours: Annotated[int, Field(example=40)]
     practice_hours: Annotated[int, Field(example=40)]
     lab_hours: Annotated[int, Field(example=40)]

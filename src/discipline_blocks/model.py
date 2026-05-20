@@ -23,12 +23,6 @@ class DisciplineBlock(Base):
         nullable=False
     )
 
-    # временно оставляем
-    control_type_id: Mapped[int] = mapped_column(
-        Integer,
-        ForeignKey('control_types.id')
-    )
-
     lecture_hours: Mapped[int] = mapped_column(
         Integer,
         nullable=False

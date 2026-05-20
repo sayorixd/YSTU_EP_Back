@@ -3,6 +3,7 @@ from src.map_cors.repository import MapCorsRepository
 from src.direction_map_cors.repository import DirectionMapCorsRepository
 from src.discipline_blocks.repository import DisciplineBlocksRepository
 from src.discipline_block_competencies.repository import DisciplineBlockCompetenciesRepository
+from src.discipline_block_control_types.repository import DisciplineBlockControlTypesRepository
 from src.disciplines.repository import DisciplinesRepository
 from src.departments.repository import DepartmentsRepository
 from src.control_types.repository import ControlTypesRepository
@@ -22,6 +23,7 @@ class MapsService:
             direction_map_cors_repository: DirectionMapCorsRepository,
             discipline_blocks_repository: DisciplineBlocksRepository,
             discipline_block_competencies_repository: DisciplineBlockCompetenciesRepository,
+            discipline_block_control_types_repository: DisciplineBlockControlTypesRepository,
             disciplines_repository: DisciplinesRepository,
             departments_repository: DepartmentsRepository,
             control_types_repository: ControlTypesRepository,
@@ -33,6 +35,8 @@ class MapsService:
         self.discipline_blocks_repository: DisciplineBlocksRepository = discipline_blocks_repository
         self.discipline_block_competencies_repository: DisciplineBlockCompetenciesRepository = \
             discipline_block_competencies_repository
+        self.discipline_block_control_types_repository = \
+            discipline_block_control_types_repository
         self.disciplines_repository: DisciplinesRepository = disciplines_repository
         self.departments_repository: DepartmentsRepository = departments_repository
         self.control_types_repository: ControlTypesRepository = control_types_repository
@@ -67,6 +71,16 @@ class MapsService:
                 for discipline_block_competency in discipline_block_competencies:
                     self.discipline_block_competencies_repository.delete(discipline_block_competency.id)
 
+                discipline_block_control_types = \
+                    self.discipline_block_control_types_repository.filter_by(
+                        discipline_block_id=discipline_block.id
+                    )
+
+                for discipline_block_control_type in discipline_block_control_types:
+                    self.discipline_block_control_types_repository.delete(
+                        discipline_block_control_type.id
+                    )
+
                 # удаляем сам блок дисциплины
                 self.discipline_blocks_repository.delete(discipline_block.id)
 
@@ -87,7 +101,7 @@ class MapsService:
                 discipline_block_id = self.discipline_blocks_repository.create({
                     'discipline_id': discipline_block.discipline_id,
                     'credit_units': discipline_block.credit_units,
-                    'control_type_id': discipline_block.control_type_id,
+                    # 'control_type_id': discipline_block.control_type_id,
                     'lecture_hours': discipline_block.lecture_hours,
                     'practice_hours': discipline_block.practice_hours,
                     'lab_hours': discipline_block.lab_hours,
@@ -95,6 +109,12 @@ class MapsService:
                     'has_course_work': discipline_block.has_course_work,
                     'map_core_id': map_core_id
                 }).id
+
+                for control_type_id in discipline_block.control_type_ids:
+                    self.discipline_block_control_types_repository.create({
+                        'discipline_block_id': discipline_block_id,
+                        'control_type_id': control_type_id
+                    })
 
                 for competency in discipline_block.competencies:
                     self.discipline_block_competencies_repository.create({
@@ -133,10 +153,22 @@ class MapsService:
             )
 
             # получаем вид контроля для блока дисциплины
-            control_type = self.control_types_repository.get_by_id(discipline_block.control_type_id)
+            discipline_block_control_types = \
+                self.discipline_block_control_types_repository.filter_by(
+                    discipline_block_id=discipline_block.id
+                )
 
-            # получаем вид контроля для выгрузки
-            control_type_unload = ControlTypeUnload.model_validate(control_type)
+            control_types_unload = []
+
+            for relation in discipline_block_control_types:
+                control_type = self.control_types_repository.get_by_id(
+                    relation.control_type_id
+                )
+
+                if control_type:
+                    control_types_unload.append(
+                        ControlTypeUnload.model_validate(control_type)
+                    )
 
             # получаем связи блока дисциплины с компетенциями
             discipline_block_competencies = self.discipline_block_competencies_repository.filter_by(
@@ -168,7 +200,7 @@ class MapsService:
                 id=discipline_block.id,
                 discipline=discipline_unload,
                 credit_units=discipline_block.credit_units,
-                control_type=control_type_unload,
+                control_types=control_types_unload,
                 lecture_hours=discipline_block.lecture_hours,
                 practice_hours=discipline_block.practice_hours,
                 lab_hours=discipline_block.lab_hours,

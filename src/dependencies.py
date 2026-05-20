@@ -7,6 +7,7 @@ from src.map_cors.repository import MapCorsRepository
 from src.direction_map_cors.repository import DirectionMapCorsRepository
 from src.discipline_blocks.repository import DisciplineBlocksRepository
 from src.discipline_block_competencies.repository import DisciplineBlockCompetenciesRepository
+from src.discipline_block_control_types.repository import DisciplineBlockControlTypesRepository
 from src.disciplines.repository import DisciplinesRepository
 from src.departments.repository import DepartmentsRepository
 from src.control_types.repository import ControlTypesRepository
@@ -65,6 +66,14 @@ DisciplineBlockCompetenciesRepositoryDep = Annotated[
     DisciplineBlockCompetenciesRepository, Depends(get_discipline_block_competencies_repository)
 ]
 
+def get_discipline_block_control_types_repository(session: SessionDep) -> DisciplineBlockControlTypesRepository:
+    return DisciplineBlockControlTypesRepository(session)
+
+
+DisciplineBlockControlTypesRepositoryDep = Annotated[
+    DisciplineBlockControlTypesRepository, Depends(get_discipline_block_control_types_repository)
+]
+
 
 def get_disciplines_repository(session: SessionDep) -> DisciplinesRepository:
     return DisciplinesRepository(session)
@@ -100,6 +109,7 @@ def get_maps_service(
         direction_map_cors_repository: DirectionMapCorsRepositoryDep,
         discipline_blocks_repository: DisciplineBlocksRepositoryDep,
         discipline_block_competencies_repository: DisciplineBlockCompetenciesRepositoryDep,
+        discipline_block_control_types_repository:DisciplineBlockControlTypesRepositoryDep,
         disciplines_repository: DisciplinesRepositoryDep,
         departments_repository: DepartmentsRepositoryDep,
         control_types_repository: ControlTypesRepositoryDep,
@@ -111,6 +121,7 @@ def get_maps_service(
         direction_map_cors_repository,
         discipline_blocks_repository,
         discipline_block_competencies_repository,
+        discipline_block_control_types_repository,
         disciplines_repository,
         departments_repository,
         control_types_repository,
