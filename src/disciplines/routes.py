@@ -118,8 +118,6 @@ def _resolve_department(session: SessionDep, department_id: int | None) -> Depar
     department = session.get(Department, department_id)
     if not department:
         raise DepartmentNotFoundException()
-    if not department.is_actual:
-        raise DepartmentIsNotActualException()
     return department
 
 
