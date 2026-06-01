@@ -44,15 +44,23 @@ def generate_study_plan(
                     0
                 ),
 
-            "control_type_ids":
-                getattr(
-                    block,
-                    "control_type_ids",
-                    []
-                ),
+            "control_type_id":
+                block.control_type_id,
+
+            "has_course_project":
+                block.has_course_project,
 
             "has_course_work":
-                block.has_course_work
+                block.has_course_work,
+
+            "has_rz":
+                block.has_rz,
+
+            "has_rgr":
+                block.has_rgr,
+
+            "has_referat":
+                block.has_referat
         })
 
     return result

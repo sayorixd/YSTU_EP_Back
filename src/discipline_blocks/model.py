@@ -60,8 +60,27 @@ class DisciplineBlock(Base):
         default=False
     )
 
-    control_types = relationship(
-        "DisciplineBlockControlType",
-        back_populates="discipline_block",
-        cascade="all, delete-orphan"
+    has_course_project: Mapped[bool] = mapped_column(
+        Boolean,
+        nullable=False,
+        default=False
     )
+
+    has_rz: Mapped[bool] = mapped_column(
+        Boolean,
+        nullable=False,
+        default=False
+    )
+
+    has_rgr: Mapped[bool] = mapped_column(
+        Boolean,
+        nullable=False,
+        default=False
+    )
+
+    has_referat: Mapped[bool] = mapped_column(
+        Boolean,
+        nullable=False,
+        default=False
+    )
+

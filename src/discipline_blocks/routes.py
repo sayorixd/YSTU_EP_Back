@@ -13,8 +13,6 @@ from .model import DisciplineBlock
 from src.map_cors.model import MapCore
 from .schemas import DisciplineBlockCreate, DisciplineBlockUpdate, DisciplineBlockRead
 
-from src.discipline_block_control_types.model import DisciplineBlockControlType
-
 router = APIRouter(
     prefix='/discipline-blocks',
     tags=['discipline blocks']
@@ -34,21 +32,13 @@ def get_discipline_block(discipline_block_id: Annotated[int, Path(gt=0)], sessio
     discipline_block = session.get(DisciplineBlock, discipline_block_id)
     if not discipline_block:
         raise DisciplineBlockNotFoundException()
-    control_type_ids = session.execute(
-        select(
-            DisciplineBlockControlType.control_type_id
-        ).where(
-            DisciplineBlockControlType
-            .discipline_block_id
-            == discipline_block.id
-        )
-    ).scalars().all()
+
 
     return {
         "id": discipline_block.id,
         "discipline_id": discipline_block.discipline_id,
         "credit_units": discipline_block.credit_units,
-        "control_type_ids": control_type_ids,
+        "control_type_id": discipline_block.control_type_id,
         "lecture_hours": discipline_block.lecture_hours,
         "practice_hours": discipline_block.practice_hours,
         "lab_hours": discipline_block.lab_hours,
@@ -56,8 +46,16 @@ def get_discipline_block(discipline_block_id: Annotated[int, Path(gt=0)], sessio
             discipline_block.semester_number,
         "map_core_id":
             discipline_block.map_core_id,
+        "has_course_project":
+            discipline_block.has_course_project,
         "has_course_work":
-            discipline_block.has_course_work
+            discipline_block.has_course_work,
+        "has_rz":
+            discipline_block.has_rz,
+        "has_gr":
+            discipline_block.has_rgr,
+        "has_referat":
+            discipline_block.has_referat
     }
 
 
@@ -83,10 +81,12 @@ def update_discipline_block(
         if not session.get(Discipline, discipline_block_data.discipline_id):
             raise DisciplineNotFoundException()
 
-    if discipline_block_data.control_type_ids:
-        for control_type_id in (discipline_block_data.control_type_ids):
-            if not session.get(ControlType, control_type_id):
-                raise ControlTypeNotFoundException()
+    if discipline_block_data.control_type_id:
+        if not session.get(
+                ControlType,
+                discipline_block_data.control_type_id
+        ):
+            raise ControlTypeNotFoundException()
 
     if discipline_block_data.map_core_id:
         if not session.get(MapCore, discipline_block_data.map_core_id):
@@ -96,57 +96,32 @@ def update_discipline_block(
         exclude_none=True
     )
 
-    update_data.pop(
-        "control_type_ids",
-        None
-    )
-
     for key, value in update_data.items():
         setattr(discipline_block, key, value)
 
-    if (discipline_block_data.control_type_ids is not None):
+    if discipline_block_data.control_type_id is not None:
         discipline_block.control_type_id = (
-            discipline_block_data
-            .control_type_ids[0]
+            discipline_block_data.control_type_id
         )
-
-        session.query(
-            DisciplineBlockControlType
-        ).filter(
-            DisciplineBlockControlType.discipline_block_id == discipline_block.id
-        ).delete()
-
-        for control_type_id in (discipline_block_data.control_type_ids):
-            session.add(
-                DisciplineBlockControlType(
-                    discipline_block_id=discipline_block.id,
-                    control_type_id=control_type_id
-                )
-            )
 
     session.commit()
     session.refresh(discipline_block)
-
-    control_type_ids = [
-        row.control_type_id
-        for row in session.execute(
-            select(DisciplineBlockControlType).where(
-                DisciplineBlockControlType.discipline_block_id == discipline_block.id
-            )
-        ).scalars().all()
-    ]
 
     return DisciplineBlockRead(
         id=discipline_block.id,
         discipline_id=discipline_block.discipline_id,
         credit_units=discipline_block.credit_units,
-        control_type_ids=control_type_ids,
+        control_type_id=discipline_block.control_type_id,
         lecture_hours=discipline_block.lecture_hours,
         practice_hours=discipline_block.practice_hours,
         lab_hours=discipline_block.lab_hours,
         semester_number=discipline_block.semester_number,
         map_core_id=discipline_block.map_core_id,
-        has_course_work=discipline_block.has_course_work
+        has_course_project=discipline_block.has_course_project,
+        has_course_work=discipline_block.has_course_work,
+        has_rz=discipline_block.has_rz,
+        has_rgr=discipline_block.has_rgr,
+        has_referat=discipline_block.has_referat,
     )
 
 
@@ -183,15 +158,6 @@ def get_discipline_blocks(session: SessionDep) -> list[DisciplineBlockRead]:
     result = []
 
     for discipline_block in discipline_blocks:
-        control_type_ids = session.execute(
-            select(
-                DisciplineBlockControlType.control_type_id
-            ).where(
-                DisciplineBlockControlType
-                .discipline_block_id
-                == discipline_block.id
-            )
-        ).scalars().all()
 
         result.append({
             "id": discipline_block.id,
@@ -199,8 +165,8 @@ def get_discipline_blocks(session: SessionDep) -> list[DisciplineBlockRead]:
                 discipline_block.discipline_id,
             "credit_units":
                 discipline_block.credit_units,
-            "control_type_ids":
-                control_type_ids,
+            "control_type_id":
+                discipline_block.control_type_id,
             "lecture_hours":
                 discipline_block.lecture_hours,
             "practice_hours":
@@ -211,8 +177,16 @@ def get_discipline_blocks(session: SessionDep) -> list[DisciplineBlockRead]:
                 discipline_block.semester_number,
             "map_core_id":
                 discipline_block.map_core_id,
+            "has_course_project":
+                discipline_block.has_course_project,
             "has_course_work":
-                discipline_block.has_course_work
+                discipline_block.has_course_work,
+            "has_rz":
+                discipline_block.has_rz,
+            "has_rgr":
+                discipline_block.has_rgr,
+            "has_referat":
+                discipline_block.has_referat,
         })
 
     return result
@@ -240,14 +214,11 @@ def create_discipline_block(
     ):
         raise DisciplineNotFoundException()
 
-    for control_type_id in (
-            discipline_block_data.control_type_ids
+    if not session.get(
+            ControlType,
+            discipline_block_data.control_type_id
     ):
-        if not session.get(
-                ControlType,
-                control_type_id
-        ):
-            raise ControlTypeNotFoundException()
+        raise ControlTypeNotFoundException()
 
     if not session.get(
             MapCore,
@@ -259,31 +230,13 @@ def create_discipline_block(
         discipline_block_data.model_dump()
     )
 
-    discipline_block_data_dict.pop(
-        "control_type_ids"
-    )
-
     discipline_block = DisciplineBlock(
-        **discipline_block_data_dict,
-
-        # временно оставляем
-        control_type_id=
-        discipline_block_data.control_type_ids[0]
+        **discipline_block_data.model_dump()
     )
 
     session.add(discipline_block)
     session.commit()
     session.refresh(discipline_block)
-
-    for control_type_id in (
-            discipline_block_data.control_type_ids
-    ):
-        session.add(
-            DisciplineBlockControlType(
-                discipline_block_id=discipline_block.id,
-                control_type_id=control_type_id
-            )
-        )
 
     session.commit()
 
@@ -291,11 +244,15 @@ def create_discipline_block(
         id=discipline_block.id,
         discipline_id=discipline_block.discipline_id,
         credit_units=discipline_block.credit_units,
-        control_type_ids=discipline_block_data.control_type_ids,
+        control_type_id=discipline_block.control_type_id,
         lecture_hours=discipline_block.lecture_hours,
         practice_hours=discipline_block.practice_hours,
         lab_hours=discipline_block.lab_hours,
         semester_number=discipline_block.semester_number,
         map_core_id=discipline_block.map_core_id,
-        has_course_work=discipline_block.has_course_work
+        has_course_project=discipline_block.has_course_project,
+        has_course_work=discipline_block.has_course_work,
+        has_rz=discipline_block.has_rz,
+        has_rgr=discipline_block.has_rgr,
+        has_referat=discipline_block.has_referat,
     )

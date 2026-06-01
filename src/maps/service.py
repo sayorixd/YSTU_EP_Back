@@ -92,7 +92,11 @@ class MapsService:
                     'practice_hours': discipline_block.practice_hours,
                     'lab_hours': discipline_block.lab_hours,
                     'semester_number': discipline_block.semester_number,
+                    'has_course_project': discipline_block.has_course_project,
                     'has_course_work': discipline_block.has_course_work,
+                    'has_rz': discipline_block.has_rz,
+                    'has_rgr': discipline_block.has_rgr,
+                    'has_referat': discipline_block.has_referat,
                     'map_core_id': map_core_id
                 }).id
 
@@ -173,7 +177,11 @@ class MapsService:
                 practice_hours=discipline_block.practice_hours,
                 lab_hours=discipline_block.lab_hours,
                 semester_number=discipline_block.semester_number,
+                has_course_project=discipline_block.has_course_project,
                 has_course_work=discipline_block.has_course_work,
+                has_rz=discipline_block.has_rz,
+                has_rgr=discipline_block.has_rgr,
+                has_referat=discipline_block.has_referat,
                 competencies=competencies_unload
             )
 

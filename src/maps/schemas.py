@@ -14,7 +14,11 @@ class DisciplineBlockLoad(BaseModel):
     practice_hours: Annotated[int, Field(gte=0, example=40)]
     lab_hours: Annotated[int, Field(gte=0, example=40)]
     semester_number: Annotated[int, Field(gt=0)]
+    has_course_project: Annotated[bool, Field(default=False, example=False)]
     has_course_work: Annotated[bool, Field(default=False, example=False)]
+    has_rz: Annotated[bool, Field(default=False, example=False)]
+    has_rgr: Annotated[bool, Field(default=False, example=False)]
+    has_referat: Annotated[bool, Field(default=False, example=False)]
     competencies: list[CompetencyLoad]
 
 
@@ -71,7 +75,11 @@ class DisciplineBlockUnload(BaseModel):
     practice_hours: Annotated[int, Field(example=40)]
     lab_hours: Annotated[int, Field(example=40)]
     semester_number: Annotated[int, Field(example=3)]
+    has_course_project: Annotated[bool, Field(example=False)]
     has_course_work: Annotated[bool, Field(example=False)]
+    has_rz: Annotated[bool, Field(example=False)]
+    has_rgr: Annotated[bool, Field(example=False)]
+    has_referat: Annotated[bool, Field(example=False)]
     competencies: list[CompetencyUnload]
 
 

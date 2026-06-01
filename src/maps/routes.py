@@ -92,7 +92,11 @@ def export_map_excel(direction_id: Annotated[int, Path(gt=0)],
 
 
             exam_col = '+' if control_type == 'Экзамен' else ''
+            course_project_col = '+' if (control_type == 'Курсовой проект' or block.has_course_project) else ''
             kursach_col = '+' if (control_type == 'Курсовая работа' or block.has_course_work) else ''
+            rz_col = '+' if (control_type == 'РЗ' or block.has_rz) else ''
+            rgr_col = '+' if (control_type == 'РГР' or block.has_rgr) else ''
+            referat_col = '+' if (control_type == 'Реферат' or block.has_referat) else ''
             diff_zachet_col = '+' if control_type == 'Диф. Зачёт' else ''
             zachet_col = '+' if control_type == 'Зачёт' else ''
 
@@ -118,7 +122,11 @@ def export_map_excel(direction_id: Annotated[int, Path(gt=0)],
                 block.credit_units,
                 zed_hours,
                 exam_col,
+                course_project_col,
                 kursach_col,
+                rz_col,
+                rgr_col,
+                referat_col,
                 diff_zachet_col,
                 zachet_col,
                 block.lecture_hours or 0,
