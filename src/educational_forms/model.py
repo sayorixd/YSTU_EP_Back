@@ -8,4 +8,4 @@ class EducationalForm(Base):
     __tablename__ = 'educational_forms'
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True)
-    name: Mapped[str] = mapped_column(String(20), nullable=False, unique=True)
+    name: Mapped[str] = mapped_column(String(63), nullable=False, unique=True)

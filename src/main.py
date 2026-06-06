@@ -13,7 +13,7 @@ from src.competency_groups.routes import router as competency_groups_router
 from src.competencies.routes import router as competencies_router
 from src.indicators.routes import router as indicators_router
 from src.discipline_blocks.routes import router as discipline_blocks_router
-from src.discipline_block_competencies.routes import router as discipline_block_competencies_router
+from src.discipline_block_competencies.routes import router as discipline_block_competencies_router 
 from src.validations.routes import router as validations_router
 from src.maps.routes import router as maps_router
 from src.maps import routes as plan_routes  # NEW NEW NEW

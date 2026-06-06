@@ -1,17 +1,23 @@
-from fastapi import APIRouter, status, Path
-from fastapi.responses import Response
-from sqlalchemy import select, exists, and_
 from typing import Annotated, Any
+
+from fastapi import APIRouter, Path, status
+from fastapi.responses import Response
+from sqlalchemy import and_, exists, select
+
+from src.competencies.model import Competency
 from src.dependencies import SessionDep
 from src.exceptions import (
-    IndicatorNotFoundException, IndicatorCodeIsNotUniqueException, CompetencyNotFoundException)
+    CompetencyNotFoundException,
+    IndicatorCodeIsNotUniqueException,
+    IndicatorNotFoundException,
+)
+
 from .model import Indicator
-from src.competencies.model import Competency
-from .schemas import IndicatorCreate, IndicatorUpdate, IndicatorRead
+from .schemas import IndicatorCreate, IndicatorRead, IndicatorUpdate
 
 router = APIRouter(
     prefix='/indicators',
-    tags=['indicators']
+    tags=['indicators'],
 )
 
 
@@ -19,12 +25,11 @@ router = APIRouter(
     '/{indicator_id}',
     responses={
         200: {'description': 'Indicator successfully received'},
-        404: {'description': 'Indicator not found'}
+        404: {'description': 'Indicator not found'},
     },
-    summary='Return the indicator'
+    summary='Return the indicator',
 )
 def get_indicator(indicator_id: Annotated[int, Path(gt=0)], session: SessionDep) -> IndicatorRead:
-    """Return the indicator with the specified id"""
     indicator = session.get(Indicator, indicator_id)
     if not indicator:
         raise IndicatorNotFoundException()
@@ -36,30 +41,39 @@ def get_indicator(indicator_id: Annotated[int, Path(gt=0)], session: SessionDep)
     responses={
         200: {'description': 'Indicator successfully updated'},
         404: {'description': 'Indicator or competency not found'},
-        409: {'description': 'Indicator data is not unique'}
+        409: {'description': 'Indicator data is not unique'},
     },
-    summary='Update the indicator'
+    summary='Update the indicator',
 )
 def update_indicator(
-        indicator_id: Annotated[int, Path(gt=0)], indicator_data: IndicatorUpdate, session: SessionDep
+    indicator_id: Annotated[int, Path(gt=0)],
+    indicator_data: IndicatorUpdate,
+    session: SessionDep,
 ) -> IndicatorRead:
-    """Update the indicator with the specified id with the given information (blank values are ignored)"""
     indicator = session.get(Indicator, indicator_id)
     if not indicator:
         raise IndicatorNotFoundException()
 
-    if indicator_data.code:
-        stmt = select(exists().where(and_(Indicator.code == indicator_data.code, Indicator.id != indicator_id)))
+    if indicator_data.code is not None:
+        stmt = select(
+            exists().where(
+                and_(
+                    Indicator.code == indicator_data.code,
+                    Indicator.id != indicator_id,
+                )
+            )
+        )
         if session.execute(stmt).scalar():
             raise IndicatorCodeIsNotUniqueException()
 
-    if indicator_data.competency_id:
+    if indicator_data.competency_id is not None:
         competency = session.get(Competency, indicator_data.competency_id)
         if not competency:
             raise CompetencyNotFoundException()
 
     for key, value in indicator_data.model_dump(exclude_none=True).items():
         setattr(indicator, key, value)
+
     session.commit()
     session.refresh(indicator)
     return indicator
@@ -72,10 +86,9 @@ def update_indicator(
         204: {'description': 'Indicator successfully deleted'},
         404: {'description': 'Indicator not found'},
     },
-    summary='Delete the indicator'
+    summary='Delete the indicator',
 )
 def delete_indicator(indicator_id: Annotated[int, Path(gt=0)], session: SessionDep) -> Response:
-    """Delete the indicator with the specified id."""
     indicator = session.get(Indicator, indicator_id)
     if not indicator:
         raise IndicatorNotFoundException()
@@ -86,13 +99,12 @@ def delete_indicator(indicator_id: Annotated[int, Path(gt=0)], session: SessionD
 
 @router.get(
     '',
+    response_model=list[IndicatorRead],
     responses={200: {'description': 'Indicators successfully received'}},
-    summary='Return a list of indicators'
+    summary='Return a list of indicators',
 )
 def get_indicators(session: SessionDep) -> list[IndicatorRead]:
-    """Return a list of indicators."""
-    indicators = session.execute(select(Indicator)).scalars()
-    return indicators
+    return session.execute(select(Indicator).order_by(Indicator.id)).scalars().all()
 
 
 @router.post(
@@ -102,12 +114,11 @@ def get_indicators(session: SessionDep) -> list[IndicatorRead]:
     responses={
         201: {'description': 'Indicator successfully created'},
         404: {'description': 'Competency not found'},
-        409: {'description': 'Indicator data is not unique'}
+        409: {'description': 'Indicator data is not unique'},
     },
-    summary='Create the indicator'
+    summary='Create the indicator',
 )
 def create_indicator(indicator_data: IndicatorCreate, session: SessionDep) -> Any:
-    """Create the indicator with the given information."""
     stmt = select(exists().where(Indicator.code == indicator_data.code))
     if session.execute(stmt).scalar():
         raise IndicatorCodeIsNotUniqueException()
