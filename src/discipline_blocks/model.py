@@ -84,3 +84,9 @@ class DisciplineBlock(Base):
         default=False
     )
 
+    # Relationship with MapCore
+    map_core = relationship(
+        'MapCore',
+        back_populates='discipline_blocks',
+        foreign_keys=[map_core_id]
+    )
