@@ -65,28 +65,28 @@ def export_map_excel(direction_id: Annotated[int, Path(gt=0)],
     ws.title = "Educational Plan"
 
 
-    # Импорты стилей для красной подсветки
+    # 3. Импорты стилей для красной подсветки
     from openpyxl.styles import PatternFill
     red_fill = PatternFill(start_color="FF0000", end_color="FF0000", fill_type="solid")
 
 
-    # 5. Новая структура заголовков (Семестр первый)
+    # 4. Новая структура заголовков
     headers = [
-        'Семестр', 'Ядро', 'Дисциплина', 'Кафедра', 'Зед', 'Зед(час)', 'Экзамен', 'Курсовая работа',
-        'Диф. Зачёт', 'Зачёт',
-        'Лекционные часы', 'Практические часы', 'Лабораторные часы',
-        'Сумма часов', 'Разница часов'
+        'Семестр', 'Ядро', 'Дисциплина', 'Кафедра', 'Зед', 'Зед(час)',
+        'Экзамен', 'Зачёт', 'Диф. зачёт',
+        'КП', 'КР', 'РЗ', 'РГР', 'Реферат',
+        'Лекционные часы', 'Практические часы', 'Лабораторные часы', 'Сумма часов', 'Разница часов'
     ]
     ws.append(headers)
 
 
-    # 3. Заполняем данные
+    # 5. Заполняем данные
     for map_core in map_data.map_cors:
         for block in map_core.discipline_blocks:
             # 1. Зед(час) = Зед * 36
             zed_hours = block.credit_units * 36
            
-                    # 2. Типы контроля (с DEBUG для отладки)
+            # 2. Типы контроля (с DEBUG для отладки)
             control_type = block.control_type.name  # БЕЗ strip()!
             print(f"DEBUG: control_type='{control_type}'")  # Временно для теста
 
@@ -101,16 +101,14 @@ def export_map_excel(direction_id: Annotated[int, Path(gt=0)],
             zachet_col = '+' if control_type == 'Зачёт' else ''
 
 
-
            # 3. Сумма часов
             base_hours = (block.lecture_hours or 0) + (block.practice_hours or 0) + (block.lab_hours or 0)
-            control_hours = 9 if block.control_type.name == 'Экзамен' else 2 if block.control_type.name in ['Зачёт', 'Дифф. зачёт'] else 0
+            control_hours = 9 if block.control_type.name == 'Экзамен' else 2 if block.control_type.name in ['Зачёт', 'Дифф. Зачёт'] else 0
             total_hours = base_hours + control_hours
 
 
             # 4. Разница часов (ИЗМЕНЕНО: Зед(час) - Сумма часов)
             hours_diff = zed_hours - total_hours
-
 
 
             # Формируем строку
@@ -121,14 +119,17 @@ def export_map_excel(direction_id: Annotated[int, Path(gt=0)],
                 block.discipline.department.name,
                 block.credit_units,
                 zed_hours,
+
                 exam_col,
+                zachet_col,
+                diff_zachet_col,
+
                 course_project_col,
                 kursach_col,
                 rz_col,
                 rgr_col,
                 referat_col,
-                diff_zachet_col,
-                zachet_col,
+
                 block.lecture_hours or 0,
                 block.practice_hours or 0,
                 block.lab_hours or 0,
@@ -170,63 +171,6 @@ def export_map_excel(direction_id: Annotated[int, Path(gt=0)],
         "Access-Control-Expose-Headers": "Content-Disposition",
     }
 
-
-    return StreamingResponse(
-        output,
-        media_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
-        headers=headers,
-    )
-
-
-
-@router.get(
-    '/directions/{direction_id}/maps/export/excel',
-    responses={
-        200: {'description': 'Educational map successfully exported (Excel file)'},
-        404: {'description': 'Direction not found'}
-    },
-    summary='Export the educational map as Excel file'
-)
-def export_map_excel(direction_id: Annotated[int, Path(gt=0)],
-                     maps_service: MapsServiceDep) -> StreamingResponse:
-    # 1. Get the same data as for JSON unload
-    map_data: MapUnload = maps_service.unload_map(direction_id)
-
-    # 2. Create Excel workbook in memory
-    wb = Workbook()
-    ws = wb.active
-    ws.title = "Educational Plan"
-
-    # Headers
-    headers = ['Семестр', 'Ядро', 'Дисциплина', 'Кафедра', 'Зачетные единицы', 'Тип контроля', 'Лекционные часы', 'Практические часы', 'Лабораторные часы']
-    ws.append(headers)
-
-    # Fill data
-    for map_core in map_data.map_cors:
-        for block in map_core.discipline_blocks:
-            row = [
-                block.semester_number,
-                map_core.name,
-                block.discipline.name,
-                block.discipline.department.name,
-                block.credit_units,
-                block.control_type.name,
-                block.lecture_hours,
-                block.practice_hours,
-                block.lab_hours,
-                
-            ]
-            ws.append(row)
-
-    # Save to BytesIO
-    output = BytesIO()
-    wb.save(output)
-    output.seek(0)
-
-    headers = {
-        "Content-Disposition": 'attachment; filename="plan.xlsx"',
-        "Access-Control-Expose-Headers": "Content-Disposition",
-    }
 
     return StreamingResponse(
         output,
