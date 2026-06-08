@@ -12,6 +12,7 @@ from src.control_types.routes import router as control_types_router
 from src.competency_groups.routes import router as competency_groups_router
 from src.competencies.routes import router as competencies_router
 from src.indicators.routes import router as indicators_router
+from src.indicators_table.routes import router as indicators_table_router
 from src.discipline_blocks.routes import router as discipline_blocks_router
 from src.discipline_block_competencies.routes import router as discipline_block_competencies_router 
 from src.validations.routes import router as validations_router
@@ -44,6 +45,7 @@ app.include_router(control_types_router)
 app.include_router(competency_groups_router)
 app.include_router(competencies_router)
 app.include_router(indicators_router)
+app.include_router(indicators_table_router)
 app.include_router(discipline_blocks_router)
 app.include_router(discipline_block_competencies_router)
 app.include_router(validations_router)
