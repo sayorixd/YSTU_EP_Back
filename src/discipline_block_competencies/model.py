@@ -9,5 +9,8 @@ class DisciplineBlockCompetency(Base):
     __tablename__ = 'discipline_block_competencies'
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True)
-    discipline_block_id: Mapped[int] = mapped_column(Integer, ForeignKey('discipline_blocks.id'))
+    discipline_block_id: Mapped[int] = mapped_column(
+        Integer,
+        ForeignKey('discipline_blocks.id', ondelete='CASCADE')
+    )
     competency_id: Mapped[int] = mapped_column(Integer, ForeignKey('competencies.id'))
