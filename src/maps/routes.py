@@ -103,13 +103,14 @@ def export_map_excel(direction_id: Annotated[int, Path(gt=0)],
 
            # 3. Сумма часов
             base_hours = (block.lecture_hours or 0) + (block.practice_hours or 0) + (block.lab_hours or 0)
-            control_hours = 9 if block.control_type.name == 'Экзамен' else 2 if block.control_type.name in ['Зачёт', 'Дифф. Зачёт'] else 0
-            total_hours = base_hours + control_hours
+            # 3. Сумма часов — только аудиторные часы
+            lecture_hours = block.lecture_hours or 0
+            practical_hours = block.practice_hours or 0
+            lab_hours = block.lab_hours or 0
+            total_hours = lecture_hours + practical_hours + lab_hours
 
-
-            # 4. Разница часов (ИЗМЕНЕНО: Зед(час) - Сумма часов)
+            # 4. Разница часов = Зед(час) - сумма аудиторных часов
             hours_diff = zed_hours - total_hours
-
 
             # Формируем строку
             row = [
@@ -130,9 +131,9 @@ def export_map_excel(direction_id: Annotated[int, Path(gt=0)],
                 rgr_col,
                 referat_col,
 
-                block.lecture_hours or 0,
-                block.practice_hours or 0,
-                block.lab_hours or 0,
+                lecture_hours,
+                practical_hours,
+                lab_hours,
                 total_hours,
                 hours_diff
             ]
