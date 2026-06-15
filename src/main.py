@@ -11,13 +11,14 @@ from src.activity_types.routes import router as activity_types_router
 from src.control_types.routes import router as control_types_router
 from src.competency_groups.routes import router as competency_groups_router
 from src.competencies.routes import router as competencies_router
+from src.competencies_matrix.routes import router as competencies_matrix_router
 from src.indicators.routes import router as indicators_router
 from src.indicators_table.routes import router as indicators_table_router
 from src.discipline_blocks.routes import router as discipline_blocks_router
 from src.discipline_block_competencies.routes import router as discipline_block_competencies_router 
 from src.validations.routes import router as validations_router
 from src.maps.routes import router as maps_router
-from src.maps import routes as plan_routes  # NEW NEW NEW
+from src.maps import routes as plan_routes
 
 from src.calendar_plans import router as calendar_plans_router
 
@@ -32,7 +33,7 @@ app.add_middleware(
     allow_methods=['*'],
     allow_headers=['*'],
 )
-app.include_router(plan_routes.router) ## NEW NEW NEW
+app.include_router(plan_routes.router)
 app.include_router(educational_levels_router)
 app.include_router(educational_forms_router)
 app.include_router(directions_router)
@@ -44,6 +45,7 @@ app.include_router(activity_types_router)
 app.include_router(control_types_router)
 app.include_router(competency_groups_router)
 app.include_router(competencies_router)
+app.include_router(competencies_matrix_router)
 app.include_router(indicators_router)
 app.include_router(indicators_table_router)
 app.include_router(discipline_blocks_router)

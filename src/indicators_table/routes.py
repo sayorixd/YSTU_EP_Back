@@ -25,6 +25,7 @@ except ImportError:
         from openpyxl.utils import column_index_from_string
 from openpyxl.styles import PatternFill, Font, Alignment, DEFAULT_FONT
 from openpyxl.styles.borders import Border, Side
+import urllib.parse
 
 
 router = APIRouter(
@@ -256,9 +257,11 @@ def export_map_excel(direction_id: Annotated[int, Path(gt=0)], session: SessionD
     wb.save(output)
     output.seek(0)
 
+    filename = f"Перечень компетенций {direction.name}.xlsx"
+    encoded_filename = urllib.parse.quote(filename.encode("utf-8"))
 
     headers = {
-        "Content-Disposition": 'attachment; filename="indicators_table.xlsx"',
+        "Content-Disposition": f'attachment; filename=\"competencies_matrix.xlsx\"; filename=UTF-8\'\'{encoded_filename}',
         "Access-Control-Expose-Headers": "Content-Disposition",
     }
 
