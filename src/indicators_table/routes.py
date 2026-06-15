@@ -261,7 +261,7 @@ def export_map_excel(direction_id: Annotated[int, Path(gt=0)], session: SessionD
     encoded_filename = urllib.parse.quote(filename.encode("utf-8"))
 
     headers = {
-        "Content-Disposition": f'attachment; filename=\"competencies_matrix.xlsx\"; filename=UTF-8\'\'{encoded_filename}',
+        "Content-Disposition": f'attachment; filename=\"indicators_table.xlsx\"; filename=UTF-8\'\'{encoded_filename}',
         "Access-Control-Expose-Headers": "Content-Disposition",
     }
 
