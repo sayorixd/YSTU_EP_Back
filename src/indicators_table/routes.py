@@ -9,6 +9,9 @@ from src.competency_groups.model import CompetencyGroup
 from src.indicators.model import Indicator
 from src.educational_levels.model import EducationalLevel
 from src.dependencies import SessionDep
+from src.common.excel import \
+    set_outer_border_of_cell_range, column_width_from_pixels, row_height_from_pixels, \
+    get_height_cell_pixels_after_wrapping_text
 
 from sqlalchemy import select
 from fastapi import APIRouter, status, Path, Response
@@ -134,11 +137,13 @@ def export_map_excel(direction_id: Annotated[int, Path(gt=0)], session: SessionD
     ws = wb.active
     ws.title = "Indicators Table"
 
+    default_font_id = ("Arial", "12")
     default_font = Font(name="Arial", sz=12)
     for key, value in default_font.__dict__.items():
         setattr(DEFAULT_FONT, key, value)
     header_font = Font(name="Arial", sz=14, b=True)
     sub_header_font = Font(name="Arial", sz=14)
+    table_header_font_id = ("Arial", "12", "bold")
     table_header_font = Font(name="Arial", sz=12, b=True)
 
     thin_border = Border(left=Side(style="thin"),
@@ -198,7 +203,7 @@ def export_map_excel(direction_id: Annotated[int, Path(gt=0)], session: SessionD
         ws.append(row)
         row_n += 1
         for i in range(len(rows)):
-            row = rows[i]
+            row = rows[i][:]
             for j in range(4):
                 row[j] = Cell(ws, row=1, column="A", value=row[j])
                 row[j].border = thin_border
@@ -222,25 +227,38 @@ def export_map_excel(direction_id: Annotated[int, Path(gt=0)], session: SessionD
             row_n += 1
         competency_group_color_i = (competency_group_color_i + 1) % len(colors_competency_groups)
 
-    max_width_multipliers = [1.5, 1.25, 0.55, 1.05]
-    max_width_multiplier_i = 0
-    for column_cells in ws.columns:
-        cells_competency_groups = column_cells[4:]
-        lists_cells_competency_groups = []
-        i = 1
-        for competency_group_id, rows in rows_by_competency_group_id.items():
-            lists_cells_competency_groups.append(cells_competency_groups[i:i+len(rows)])
-            i += len(rows) + 1
-        cells_competency_groups = []
-        for cells in lists_cells_competency_groups:
-            cells_competency_groups += cells
-        new_column_length = max(len(str(cell.value)) for cell in cells_competency_groups)
-        new_column_letter = (get_column_letter(cells_competency_groups[0].column))
-        if new_column_length > 0:
-            ws.column_dimensions[new_column_letter].width = \
-                new_column_length * max_width_multipliers[max_width_multiplier_i]
-        max_width_multiplier_i += 1
+    competency_code_width_pixels = 80
+    competency_name_width_pixels = 207
+    competency_description_width_pixels = 400
+    indicators_width_pixels = 2000
+    ws.column_dimensions[get_column_letter(1)].width = column_width_from_pixels(competency_code_width_pixels)
+    ws.column_dimensions[get_column_letter(2)].width = column_width_from_pixels(competency_name_width_pixels)
+    ws.column_dimensions[get_column_letter(3)].width = column_width_from_pixels(competency_description_width_pixels)
+    ws.column_dimensions[get_column_letter(4)].width = column_width_from_pixels(indicators_width_pixels)
+    n = 5
+    for competency_group_id, rows in rows_by_competency_group_id.items():
+        n += 1
+        for i in range(len(rows)):
+            row = rows[i][:]
 
+            competency_description = str(row[2])
+            indicators = str(row[3])
+
+            competency_description_height = get_height_cell_pixels_after_wrapping_text(
+                competency_description,
+                default_font_id,
+                competency_description_width_pixels
+            )
+            indicators_height = get_height_cell_pixels_after_wrapping_text(
+                indicators,
+                default_font_id,
+                indicators_width_pixels
+            )
+            max_height = max(competency_description_height, indicators_height)
+
+            ws.row_dimensions[n].height = row_height_from_pixels(max_height)
+            n += 1
+    
     i = 0
     for competency_group_id, rows in rows_by_competency_group_id.items():
         ws.merge_cells(

@@ -5,6 +5,5 @@ __pycache__
 .vscode
 precompute/
 venv/
+.venv/
 activate/
-*.ttf
-*.otf
