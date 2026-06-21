@@ -3,6 +3,9 @@ from fastapi.responses import Response
 from typing import Any, List, Dict
 from pydantic import BaseModel
 from enum import Enum
+from sqlalchemy import select
+from src.dependencies import SessionDep
+from src.control_types.model import ControlType
 
 router = APIRouter(
     prefix='/validations',
@@ -15,7 +18,7 @@ class Discipline(BaseModel):
     name: str
     credits: int
     examType: str
-    hasCourseWork: bool
+    secondaryControlTypeIds: List[int] = []
     hasPracticalWork: bool
     department: str
     competenceCodes: List[int]
@@ -48,10 +51,10 @@ def calculate_hours(discipline: Discipline) -> Dict[str, float]:
     total_hours = discipline.credits * 36
     exam_hours = 9 if discipline.examType == "Экзамен" else 0
     exam_prep_hours = 27 if discipline.examType == "Экзамен" else 0
+    
     individual_hours = sum([
         2 if discipline.examType == "Зачет" else 0,
         2 if discipline.examType == "Дифференцированный зачет" else 0,
-        2 if discipline.hasCourseWork else 0,
         1 if discipline.hasPracticalWork else 0
     ])
     
@@ -70,7 +73,12 @@ def calculate_hours(discipline: Discipline) -> Dict[str, float]:
     }
 
 @router.post('/validate-up', response_model=ValidationResponse)
-def validate_up(request: List[Row]) -> ValidationResponse:
+def validate_up(request: List[Row], session: SessionDep) -> ValidationResponse:
+    # Находим ID "Курсовой работы" динамически
+    control_types = session.execute(select(ControlType)).scalars().all()
+    course_work_type = next((ct for ct in control_types if 'Курсовая работа' in ct.name and not ct.is_primary), None)
+    course_work_id = course_work_type.id if course_work_type else -1
+
     validation_results = []
     
     # Проверка на пустой ввод
@@ -86,6 +94,10 @@ def validate_up(request: List[Row]) -> ValidationResponse:
     
     semesters_count = len(request[0].data)
     
+    control_types = session.execute(select(ControlType)).scalars().all()
+    course_work_type = next((ct for ct in control_types if 'Курсовая работа' in ct.name and not ct.is_primary), None)
+    course_work_id = course_work_type.id if course_work_type else -1
+
     # ===== ПРОВЕРКИ БЛОКИРУЮЩИХ КРИТЕРИЕВ =====
     total_credits = 0
     for semester_idx in range(semesters_count):
@@ -107,12 +119,12 @@ def validate_up(request: List[Row]) -> ValidationResponse:
                 }
             ))
             
-        # Подсчет курсовых работ в семестре
+        # Подсчет курсовых работ в семестре (через динамический ID)
         course_works_count = sum(
-            1 
-            for row in request 
-            for discipline in row.data[semester_idx] 
-            if discipline.hasCourseWork
+            1
+            for row in request
+            for discipline in row.data[semester_idx]
+            if course_work_id in discipline.secondaryControlTypeIds
         )
         
         if course_works_count > 2:
