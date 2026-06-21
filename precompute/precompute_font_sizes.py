@@ -9,7 +9,9 @@ from itertools import chain
 
 font_file_path_string = "fonts/Arial.ttf"
 font_size = 11
-coefficient_advance_widths_and_kerning = 35 / (2 * 22.759) * (80 / 83.757)
+#coefficient_advance_widths_and_kerning = 1
+#coefficient_advance_widths_and_kerning = 35 / (2 * 22.759) * (80 / 83.757)  # Arial 11 pts
+coefficient_advance_widths_and_kerning = 8.925 / 13.668
 
 font_file_path = str(Path(font_file_path_string).expanduser())
 font = ImageFont.truetype(font_file_path, font_size)
@@ -32,7 +34,8 @@ equivalent = dict()
 equivalent.update({ c1: c2 for (c1, c2) in equivalent_pairs })
 equivalent.update({ c2: c1 for (c1, c2) in equivalent_pairs })
 
-upm = 1000 #ttf["head"].unitsPerEm
+#upm = ttf["head"].unitsPerEm
+upm = 1000
 
 def get_kern_table_data():
     global ttf
