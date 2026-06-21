@@ -2,6 +2,7 @@ from fastapi import APIRouter, status, Path
 from fastapi.responses import Response
 from sqlalchemy import select
 from typing import Annotated, Any
+from sqlalchemy.orm import selectinload
 from src.dependencies import SessionDep
 from src.exceptions import (
     DisciplineBlockNotFoundException, DisciplineNotFoundException, ControlTypeNotFoundException,
@@ -29,34 +30,32 @@ router = APIRouter(
 )
 def get_discipline_block(discipline_block_id: Annotated[int, Path(gt=0)], session: SessionDep) -> DisciplineBlockRead:
     """Return the discipline block with the specified id"""
-    discipline_block = session.get(DisciplineBlock, discipline_block_id)
+    # Используем selectinload, чтобы SQLAlchemy сразу подтянул дополнительные виды контроля
+    stmt = (
+        select(DisciplineBlock)
+        .options(selectinload(DisciplineBlock.secondary_control_links))
+        .where(DisciplineBlock.id == discipline_block_id)
+    )
+    discipline_block = session.execute(stmt).scalar_one_or_none()
+    
     if not discipline_block:
         raise DisciplineBlockNotFoundException()
 
+    # Извлекаем ID видов контроля из объектов-связок
+    secondary_ids = [link.control_type_id for link in discipline_block.secondary_control_links]
 
-    return {
-        "id": discipline_block.id,
-        "discipline_id": discipline_block.discipline_id,
-        "credit_units": discipline_block.credit_units,
-        "control_type_id": discipline_block.control_type_id,
-        "lecture_hours": discipline_block.lecture_hours,
-        "practice_hours": discipline_block.practice_hours,
-        "lab_hours": discipline_block.lab_hours,
-        "semester_number":
-            discipline_block.semester_number,
-        "map_core_id":
-            discipline_block.map_core_id,
-        "has_course_project":
-            discipline_block.has_course_project,
-        "has_course_work":
-            discipline_block.has_course_work,
-        "has_rz":
-            discipline_block.has_rz,
-        "has_gr":
-            discipline_block.has_rgr,
-        "has_referat":
-            discipline_block.has_referat
-    }
+    return DisciplineBlockRead(
+        id=discipline_block.id,
+        discipline_id=discipline_block.discipline_id,
+        credit_units=discipline_block.credit_units,
+        control_type_id=discipline_block.control_type_id,
+        lecture_hours=discipline_block.lecture_hours,
+        practice_hours=discipline_block.practice_hours,
+        lab_hours=discipline_block.lab_hours,
+        semester_number=discipline_block.semester_number,
+        map_core_id=discipline_block.map_core_id,
+        secondary_control_type_ids=secondary_ids 
+    )
 
 
 @router.patch(
@@ -117,11 +116,7 @@ def update_discipline_block(
         lab_hours=discipline_block.lab_hours,
         semester_number=discipline_block.semester_number,
         map_core_id=discipline_block.map_core_id,
-        has_course_project=discipline_block.has_course_project,
-        has_course_work=discipline_block.has_course_work,
-        has_rz=discipline_block.has_rz,
-        has_rgr=discipline_block.has_rgr,
-        has_referat=discipline_block.has_referat,
+        secondary_control_type_ids=discipline_block.secondary_control_links
     )
 
 
@@ -149,46 +144,25 @@ def delete_discipline_block(discipline_block_id: Annotated[int, Path(gt=0)], ses
     responses={200: {'description': 'Discipline blocks successfully received'}},
     summary='Return a list of discipline blocks'
 )
-def get_discipline_blocks(session: SessionDep) -> list[DisciplineBlockRead]:
+def get_discipline_blocks(session: SessionDep, map_core_id: int | None = None) -> list[DisciplineBlockRead]:
     """Return a list of discipline blocks."""
-    discipline_blocks = session.execute(
-        select(DisciplineBlock)
-    ).scalars().all()
+    stmt = select(DisciplineBlock).options(selectinload(DisciplineBlock.secondary_control_links))
+    discipline_blocks = session.execute(stmt).scalars().all()
 
     result = []
-
-    for discipline_block in discipline_blocks:
-
+    for db in discipline_blocks:
         result.append({
-            "id": discipline_block.id,
-            "discipline_id":
-                discipline_block.discipline_id,
-            "credit_units":
-                discipline_block.credit_units,
-            "control_type_id":
-                discipline_block.control_type_id,
-            "lecture_hours":
-                discipline_block.lecture_hours,
-            "practice_hours":
-                discipline_block.practice_hours,
-            "lab_hours":
-                discipline_block.lab_hours,
-            "semester_number":
-                discipline_block.semester_number,
-            "map_core_id":
-                discipline_block.map_core_id,
-            "has_course_project":
-                discipline_block.has_course_project,
-            "has_course_work":
-                discipline_block.has_course_work,
-            "has_rz":
-                discipline_block.has_rz,
-            "has_rgr":
-                discipline_block.has_rgr,
-            "has_referat":
-                discipline_block.has_referat,
+            "id": db.id,
+            "discipline_id": db.discipline_id,
+            "credit_units": db.credit_units,
+            "control_type_id": db.control_type_id,
+            "lecture_hours": db.lecture_hours,
+            "practice_hours": db.practice_hours,
+            "lab_hours": db.lab_hours,
+            "semester_number": db.semester_number,
+            "map_core_id": db.map_core_id,
+            "secondary_control_type_ids": [link.control_type_id for link in db.secondary_control_links]
         })
-
     return result
 
 
@@ -250,9 +224,5 @@ def create_discipline_block(
         lab_hours=discipline_block.lab_hours,
         semester_number=discipline_block.semester_number,
         map_core_id=discipline_block.map_core_id,
-        has_course_project=discipline_block.has_course_project,
-        has_course_work=discipline_block.has_course_work,
-        has_rz=discipline_block.has_rz,
-        has_rgr=discipline_block.has_rgr,
-        has_referat=discipline_block.has_referat,
+        secondary_control_type_ids=discipline_block.secondary_control_links
     )
