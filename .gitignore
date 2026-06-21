@@ -3,3 +3,7 @@
 __pycache__
 .env
 .vscode
+precompute/
+venv/
+.venv/
+activate/
