@@ -1,42 +1,30 @@
 from typing import Annotated
 from pydantic import BaseModel, Field, ConfigDict
 
-
 class DisciplineBlockCreate(BaseModel):
-    discipline_id: Annotated[int, Field(example=1)]
-    credit_units: Annotated[int, Field(example=3)]
+    discipline_id: int
+    credit_units: int
     control_type_id: int
-    lecture_hours: Annotated[int, Field(example=40)]
-    practice_hours: Annotated[int, Field(example=40)]
-    lab_hours: Annotated[int, Field(example=40)]
-    semester_number: Annotated[int, Field(example=3)]
-    map_core_id: Annotated[int, Field(example=1)]
-    has_course_project: Annotated[bool, Field(example=False)]
-    has_course_work: Annotated[bool, Field(example=False)]
-    has_rz: Annotated[bool, Field(example=False)]
-    has_rgr: Annotated[bool, Field(example=False)]
-    has_referat: Annotated[bool, Field(example=False)]
-
+    lecture_hours: int
+    practice_hours: int
+    lab_hours: int
+    semester_number: int
+    map_core_id: int
+    secondary_control_type_ids: list[int] = []
 
 class DisciplineBlockUpdate(BaseModel):
-    discipline_id: Annotated[int | None, Field(example=1)] = None
-    credit_units: Annotated[int | None, Field(example=3)] = None
+    discipline_id: int | None = None
+    credit_units: int | None = None
     control_type_id: int | None = None
-    lecture_hours: Annotated[int | None, Field(example=40)] = None
-    practice_hours: Annotated[int | None, Field(example=40)] = None
-    lab_hours: Annotated[int | None, Field(example=40)] = None
-    semester_number: Annotated[int | None, Field(example=3)] = None
-    map_core_id: Annotated[int | None, Field(example=1)] = None
-    has_course_project: Annotated[bool | None, Field(example=False)] = None
-    has_course_work: Annotated[bool | None, Field(example=False)] = None
-    has_rz: Annotated[bool | None, Field(example=False)] = None
-    has_rgr: Annotated[bool | None, Field(example=False)] = None
-    has_referat: Annotated[bool | None, Field(example=False)] = None
-
+    lecture_hours: int | None = None
+    practice_hours: int | None = None
+    lab_hours: int | None = None
+    semester_number: int | None = None
+    map_core_id: int | None = None
+    secondary_control_type_ids: list[int] | None = None
 
 class DisciplineBlockRead(BaseModel):
     model_config = ConfigDict(from_attributes=True)
-
     id: int
     discipline_id: int
     credit_units: int
@@ -46,33 +34,4 @@ class DisciplineBlockRead(BaseModel):
     lab_hours: int
     semester_number: int
     map_core_id: int
-    has_course_project: bool
-    has_course_work: bool
-    has_rz: bool
-    has_rgr: bool
-    has_referat: bool
-
-    @classmethod
-    def model_validate(cls, obj, *args, **kwargs):
-        data = {
-            "id": obj.id,
-            "discipline_id": obj.discipline_id,
-            "credit_units": obj.credit_units,
-            "control_type_id": obj.control_type_id,
-            "lecture_hours": obj.lecture_hours,
-            "practice_hours": obj.practice_hours,
-            "lab_hours": obj.lab_hours,
-            "semester_number": obj.semester_number,
-            "map_core_id": obj.map_core_id,
-            "has_course_project": obj.has_course_project,
-            "has_course_work": obj.has_course_work,
-            "has_rz": obj.has_rz,
-            "has_rgr": obj.has_rgr,
-            "has_referat": obj.has_referat,
-        }
-
-        return super().model_validate(
-            data,
-            *args,
-            **kwargs
-        )
+    secondary_control_type_ids: list[int] = []

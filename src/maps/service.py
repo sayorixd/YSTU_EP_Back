@@ -25,7 +25,8 @@ class MapsService:
             disciplines_repository: DisciplinesRepository,
             departments_repository: DepartmentsRepository,
             control_types_repository: ControlTypesRepository,
-            competencies_repository: CompetenciesRepository
+            competencies_repository: CompetenciesRepository,
+            discipline_block_control_types_repository
     ):
         self.directions_repository: DirectionsRepository = directions_repository
         self.map_cors_repository: MapCorsRepository = map_cors_repository
@@ -37,8 +38,8 @@ class MapsService:
         self.departments_repository: DepartmentsRepository = departments_repository
         self.control_types_repository: ControlTypesRepository = control_types_repository
         self.competencies_repository: CompetenciesRepository = competencies_repository
-
-    def load_map(self, direction_id: int, data: MapLoad) -> None:
+        self.discipline_block_control_types_repository = discipline_block_control_types_repository
+    def load_map(self, direction_id: int, data: MapLoad) -> None:   
 
         if not self.directions_repository.get_by_id(direction_id):
             raise DirectionNotFoundException()
@@ -84,7 +85,7 @@ class MapsService:
             })
 
             for discipline_block in map_core.discipline_blocks:
-                discipline_block_id = self.discipline_blocks_repository.create({
+                block_id = self.discipline_blocks_repository.create({
                     'discipline_id': discipline_block.discipline_id,
                     'credit_units': discipline_block.credit_units,
                     'control_type_id': discipline_block.control_type_id,
@@ -92,17 +93,23 @@ class MapsService:
                     'practice_hours': discipline_block.practice_hours,
                     'lab_hours': discipline_block.lab_hours,
                     'semester_number': discipline_block.semester_number,
-                    'has_course_project': discipline_block.has_course_project,
-                    'has_course_work': discipline_block.has_course_work,
-                    'has_rz': discipline_block.has_rz,
-                    'has_rgr': discipline_block.has_rgr,
-                    'has_referat': discipline_block.has_referat,
                     'map_core_id': map_core_id
                 }).id
-
+                
+                old_links = self.discipline_block_control_types_repository.filter_by(discipline_block_id=block_id)
+                for link in old_links:
+                    self.discipline_block_control_types_repository.delete(link.id)
+                
+                for ct_id in getattr(discipline_block, 'secondary_control_type_ids', []):
+                    self.discipline_block_control_types_repository.create({
+                        'discipline_block_id': block_id,
+                        'control_type_id': ct_id
+                    })
+                
+                # 3. Сохраняем компетенции
                 for competency in discipline_block.competencies:
                     self.discipline_block_competencies_repository.create({
-                        'discipline_block_id': discipline_block_id,
+                        'discipline_block_id': block_id,
                         'competency_id': competency.id
                     })
 
@@ -118,28 +125,31 @@ class MapsService:
 
         discipline_blocks_unload = []
         for discipline_block in discipline_blocks:
-
-            # получаем дисциплину блока
+            # 1. Проверяем дисциплину
             discipline = self.disciplines_repository.get_by_id(discipline_block.discipline_id)
-
-            # получаем кафедру дисциплины
+            if not discipline:
+                # Пропускаем "битый" блок, если дисциплины больше нет в БД
+                continue 
+                
+            # 2. Проверяем кафедру
             department = self.departments_repository.get_by_id(discipline.department_id)
-
-            # получаем объект кафедры для выгрузки
+            if not department:
+                continue
+                
             department_unload = DepartmentUnload.model_validate(department)
-
-            # получаем объект дисциплины для выгрузки
+            
             discipline_unload = DisciplineUnload(
                 id=discipline.id,
                 name=discipline.name,
                 short_name=discipline.short_name,
                 department=department_unload
             )
-
-            # получаем вид контроля для блока дисциплины
+            
+            # 3. Проверяем вид контроля
             control_type = self.control_types_repository.get_by_id(discipline_block.control_type_id)
-
-            # получаем вид контроля для выгрузки
+            if not control_type:
+                continue
+                
             control_type_unload = ControlTypeUnload.model_validate(control_type)
 
             # получаем связи блока дисциплины с компетенциями
@@ -167,6 +177,7 @@ class MapsService:
                 # формируем список компетенций для выгрузки
                 competencies_unload.append(competency_unload)
 
+            secondary_ids = [link.control_type_id for link in discipline_block.secondary_control_links]
             # формируем объект блока дисциплины для выгрузки
             discipline_block_unload = DisciplineBlockUnload(
                 id=discipline_block.id,
@@ -177,15 +188,9 @@ class MapsService:
                 practice_hours=discipline_block.practice_hours,
                 lab_hours=discipline_block.lab_hours,
                 semester_number=discipline_block.semester_number,
-                has_course_project=discipline_block.has_course_project,
-                has_course_work=discipline_block.has_course_work,
-                has_rz=discipline_block.has_rz,
-                has_rgr=discipline_block.has_rgr,
-                has_referat=discipline_block.has_referat,
+                secondary_control_type_ids=secondary_ids,
                 competencies=competencies_unload
             )
-
-            # формируем список блоков дисциплин для выгрузки
             discipline_blocks_unload.append(discipline_block_unload)
 
         # формируем объект ядра карты для выгрузки
