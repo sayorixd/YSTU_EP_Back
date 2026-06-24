@@ -4,8 +4,10 @@ from sqlalchemy import select, exists, and_
 from typing import Annotated, Any
 from src.dependencies import SessionDep
 from src.exceptions import (
-    CompetencyNotFoundException, CompetencyCodeIsNotUniqueException, CompetencyGroupNotFoundException)
+    CompetencyNotFoundException, CompetencyGroupNotFoundException, DirectionNotFoundException
+)
 from src.competency_groups.model import CompetencyGroup
+from src.directions.model import Direction
 from .model import Competency
 from .schemas import CompetencyCreate, CompetencyUpdate, CompetencyRead
 
@@ -47,11 +49,6 @@ def update_competency(
     competency = session.get(Competency, competency_id)
     if not competency:
         raise CompetencyNotFoundException()
-
-    if competency_data.code:
-        stmt = select(exists().where(and_(Competency.code == competency_data.code, Competency.id != competency_id)))
-        if session.execute(stmt).scalar():
-            raise CompetencyCodeIsNotUniqueException()
 
     if competency_data.competency_group_id:
         competency_group = session.get(CompetencyGroup, competency_data.competency_group_id)
@@ -95,6 +92,27 @@ def get_competencies(session: SessionDep) -> list[CompetencyRead]:
     return competencies
 
 
+@router.get(
+    '/direction/{direction_id}',
+    responses={200: {'description': 'Competencies successfully received'}},
+    summary='Return a list of competencies that are specific to the direction'
+)
+def get_competencies_of_direction(
+    direction_id: Annotated[int, Path(gt=0)],
+    session: SessionDep
+) -> list[CompetencyRead]:
+    """Return a list of competencies that are specific to the direction"""
+    direction = session.get(Direction, direction_id)
+    if not direction:
+        raise DirectionNotFoundException()
+    
+    competencies = session.execute(
+        select(Competency).where(Competency.direction_id == direction_id)
+    ).scalars()
+
+    return competencies
+
+
 @router.post(
     '',
     response_model=CompetencyRead,
@@ -108,13 +126,13 @@ def get_competencies(session: SessionDep) -> list[CompetencyRead]:
 )
 def create_competency(competency_data: CompetencyCreate, session: SessionDep) -> Any:
     """Create the competency with the given information."""
-    stmt = select(exists().where(Competency.code == competency_data.code))
-    if session.execute(stmt).scalar():
-        raise CompetencyCodeIsNotUniqueException()
-
     competency_group = session.get(CompetencyGroup, competency_data.competency_group_id)
     if not competency_group:
         raise CompetencyGroupNotFoundException()
+    
+    direction = session.get(Direction, competency_data.direction_id)
+    if not direction:
+        raise DirectionNotFoundException()
 
     competency = Competency(**competency_data.model_dump())
     session.add(competency)
