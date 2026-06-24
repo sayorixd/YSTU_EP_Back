@@ -123,10 +123,10 @@ FONT_DATA = {
     }
 }
 
-def get_width_text(text, font_id):
+def get_width_text(text, font_key):
     global FONT_DATA
-    ADVANCE_WIDTHS_PIXELS = FONT_DATA[font_id]["advance_widths_pixels"]
-    KERNING = FONT_DATA[font_id]["kerning"]
+    ADVANCE_WIDTHS_PIXELS = FONT_DATA[font_key]["advance_widths_pixels"]
+    KERNING = FONT_DATA[font_key]["kerning"]
     UNSUPPORTED_CHARACTER_WIDTH = ADVANCE_WIDTHS_PIXELS["UNSUPPORTED"]
     t = text.split("\n")
     return max([
@@ -135,7 +135,7 @@ def get_width_text(text, font_id):
         for line in t
     ])
 
-def _determine_number_of_rows_after_wrapping_text(text, font_id, width_pixels, padding_horizontal=7):
+def _determine_number_of_rows_after_wrapping_text(text, font_key, width_pixels, padding_horizontal=7):
     global FONT_DATA
 
     text_ = str(text)
@@ -145,7 +145,7 @@ def _determine_number_of_rows_after_wrapping_text(text, font_id, width_pixels, p
     lines = text_.split("\n")
     lines = [[word + " " for word in line.split(" ")] for line in lines]
 
-    kerning = FONT_DATA[font_id]["kerning"]
+    kerning = FONT_DATA[font_key]["kerning"]
 
     rows = 0
     for i in range(len(lines)):
@@ -154,7 +154,7 @@ def _determine_number_of_rows_after_wrapping_text(text, font_id, width_pixels, p
         j = 0
         while j < len(line):
             word = line[j]
-            width = get_width_text(word, font_id)
+            width = get_width_text(word, font_key)
             if sum_width + width < width_pixels:
                 sum_width += width
                 if j < len(line) - 1:
@@ -165,7 +165,7 @@ def _determine_number_of_rows_after_wrapping_text(text, font_id, width_pixels, p
                 sum_width = 0
                 j += 1
             else:
-                width_without_space = get_width_text(word[:-1], font_id)
+                width_without_space = get_width_text(word[:-1], font_key)
                 if sum_width + width_without_space < width_pixels:
                     j += 1
                 rows += 1
@@ -176,13 +176,13 @@ def _determine_number_of_rows_after_wrapping_text(text, font_id, width_pixels, p
 
     return rows
 
-def _get_height_cell(rows_count, font_id, padding_vertical=8):
+def _get_height_cell(rows_count, font_key, padding_vertical=8):
     global FONT_DATA
-    font_size = FONT_DATA[font_id]["font_size"]
+    font_size = FONT_DATA[font_key]["font_size"]
     font_size_padded = font_size + padding_vertical
     return font_size_padded * rows_count
 
-def get_height_cell_pixels_after_wrapping_text(text, font_id, width_pixels):
-    n_rows = _determine_number_of_rows_after_wrapping_text(text, font_id, width_pixels)
-    height_cell = _get_height_cell(n_rows, font_id)
+def get_height_cell_pixels_after_wrapping_text(text, font_key, width_pixels):
+    n_rows = _determine_number_of_rows_after_wrapping_text(text, font_key, width_pixels)
+    height_cell = _get_height_cell(n_rows, font_key)
     return height_cell

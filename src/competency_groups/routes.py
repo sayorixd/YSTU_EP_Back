@@ -39,8 +39,9 @@ def get_competency_group(competency_group_id: Annotated[int, Path(gt=0)], sessio
     summary='Update the competency group'
 )
 def update_competency_group(
-        competency_group_id: Annotated[int, Path(gt=0)], competency_group_data: CompetencyGroupUpdate,
-        session: SessionDep
+    competency_group_id: Annotated[int, Path(gt=0)],
+    competency_group_data: CompetencyGroupUpdate,
+    session: SessionDep
 ) -> CompetencyGroupRead:
     """Update the competency group with the specified id with the given information (blank values are ignored)"""
     competency_group = session.get(CompetencyGroup, competency_group_id)

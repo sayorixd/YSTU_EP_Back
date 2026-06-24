@@ -283,13 +283,17 @@ def export_map_excel(direction_id: Annotated[int, Path(gt=0)], session: SessionD
         [Cell(ws, row=1, column="A", value="") for j in range(table_width)] for i in range(1 + table_height)
     ]
 
+    educational_level_name_in_genetive = educational_level.name_in_genetive.lower()
+    direction_name = f"{direction.code} {direction.profile}"
+    direction_profile = direction.profile
+
     i_row = 0
     row = rows[i_row]
-    row[0].value = f"Матрица соответствия компетенций и дисциплин по направлению подготовки {direction.name} " + \
-                   f"(уровень {educational_level.name.lower()})"
+    row[0].value = f"Матрица соответствия компетенций и дисциплин по направлению подготовки {direction_name} " + \
+                   f"(уровень {educational_level_name_in_genetive})"
     row[0].font = title_font
     row[0].alignment = Alignment(horizontal="left", wrap_text=True)
-    row[3].value = f"Направленность (профиль) {direction.name}"
+    row[3].value = f"Направленность (профиль) {direction_profile}"
     row[3].font = title_font
     row[3].alignment = Alignment(horizontal="left", wrap_text=True)
     ws.row_dimensions[i_row + 1].height = row_height_from_pixels(71)
@@ -388,7 +392,7 @@ def export_map_excel(direction_id: Annotated[int, Path(gt=0)], session: SessionD
 
         i_row += 1
         row = rows[i_row]
-        row[0].value = f"[НАЗВАНИЕ ГРУППЫ КОМПЕТЕНЦИЙ] ({competency_group.name})"
+        row[0].value = f"{competency_group.name} ({competency_group.short_name})"
         row[0].alignment = Alignment(horizontal="center", vertical="center")
         for i in range(table_width):
             row[i].fill = PatternFill(

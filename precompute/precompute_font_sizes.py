@@ -1,3 +1,26 @@
+#
+# What does this script do?
+#
+# The openpyxl package, which is used in competencies matrix and indicators table exports,
+# lacks a function that automatically adjusts width/height of a column or a row with a set
+# height/width. As of time of writing this comment, this function is manually implemented in
+# src/common/excel.py file and named get_height_cell_pixels_after_wrapping_text, although it
+# is not completely accurate and can allocate some extra space. The calculation inside this
+# function accounts for advance widths of characters and kerning offset adjustments, which
+# are retrieved from the FONT_DATA dictionary inside the same file. This script generates
+# the necessary advance widths and kerning data for a set font with a set font size
+#
+# How to use this script?
+#
+# 1) (Optional) Create a virtual environment
+# 2) Install dependecies listed in the requirements.txt file
+# 3) Find config parameters section
+# 4) Set font_file_path_string to the relative path to the desired font file
+# 5) Set font_size to the desired font size in points
+# 6) Run this script
+# 7) Copy ADVANCE_WIDTHS and KERNING dictionaries and paste them in the FONT_DATA dictionary
+#
+
 import string
 from math import floor, ceil
 from pathlib import Path
@@ -7,11 +30,21 @@ from fontTools.unicode import Unicode
 from itertools import chain
 
 
+#
+# Config parameters
+#
+
 font_file_path_string = "fonts/Arial.ttf"
 font_size = 11
-#coefficient_advance_widths_and_kerning = 1
-#coefficient_advance_widths_and_kerning = 35 / (2 * 22.759) * (80 / 83.757)  # Arial 11 pts
+
+# Coefficient to multiply the resulting advance_widths and kerning offsets by to match
+# the sizes of characters and kerning in Excel and Google Docs
 coefficient_advance_widths_and_kerning = 8.925 / 13.668
+
+#
+# End of config parameters
+#
+
 
 font_file_path = str(Path(font_file_path_string).expanduser())
 font = ImageFont.truetype(font_file_path, font_size)
@@ -22,9 +55,6 @@ chars = list(chain.from_iterable([y + (Unicode[y[0]],) for y in x.cmap.items()] 
 map_class_to_unicode = {
     c[1]: chr(c[0]) for c in chars
 }
-#for key, value in sorted(list(map_class_to_unicode.items()), key=lambda x: ord(x[1]))[:256]:
-#for key, value in list(map_class_to_unicode.items()):
-#    print(value, ord(value))
 equivalent_pairs = [
     (chr(32), chr(160)),  # space
     (chr(45), chr(173)),  # -
@@ -126,19 +156,6 @@ for key, value in ADVANCE_WIDTHS_PIXELS.items():
     ADVANCE_WIDTHS_PIXELS[key] = round(ceil(ADVANCE_WIDTHS_PIXELS[key] * 1000), 3) / 1000
 ADVANCE_WIDTHS_PIXELS["UNSUPPORTED"] = ADVANCE_WIDTHS_PIXELS["0"]
 
-#advance_widths = { map_class_to_unicode[c[1]]: ttf["hmtx"][c[1]][0] for c in chars }
-#ADVANCE_WIDTHS_PIXELS = {
-#    key: advance_width * font_size / upm
-#    for key, advance_width in advance_widths.items()
-#}
-
-#WIDTH_DICT = dict()
-#for char in supported_chars:
-#    left, _, right, _ = font.getbbox(char)
-#    width = right - left + 1
-#    WIDTH_DICT[char] = width
-#unsupported_char_width = max([width for width in WIDTH_DICT.values()])
-#WIDTH_DICT["UNSUPPORTED"] = unsupported_char_width
 
 kerning_raw = get_all_kerning()
 
@@ -162,24 +179,6 @@ for key, kerning_value in kerning_by_pair_of_characters.items():
 for key, value in KERNING.items():
     KERNING[key] = round(ceil(KERNING[key] * 1000), 3) / 1000
 
-#SPACES_BETWEEN = dict()
-#for c1 in supported_chars:
-#    for c2 in supported_chars:
-#        left, _, right, _ = font.getbbox(c1 + c2)
-#        width = right - left + 1
-#        width_individual = WIDTH_DICT[c1] + WIDTH_DICT[c2]
-#        width_space = width - width_individual
-#        SPACES_BETWEEN[(c1, c2)] = width_space
-
-#AVERAGE_SPACE_WIDTH = sum(SPACES_BETWEEN.values()) / len(SPACES_BETWEEN)
-#MAX_SPACE_WIDTH = max(SPACES_BETWEEN.values())
-
-#AVERAGE_WIDTH = sum(WIDTH_DICT.values()) / len(WIDTH_DICT)
 
 print(f'{ADVANCE_WIDTHS_PIXELS=}')
 print(f'{KERNING=}')
-#print(f'{SPACES_BETWEEN=}')
-#print(f'{MAX_SPACE_WIDTH}')
-#print(f'{SPACES_BETWEEN[('и', 'и')]}')
-#print(f'{AVERAGE_SPACE_WIDTH=}')
-#print(f'{AVERAGE_WIDTH=}')

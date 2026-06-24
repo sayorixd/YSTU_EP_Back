@@ -73,14 +73,6 @@ class CompetencyNotFoundException(HTTPException):
         )
 
 
-class CompetencyCodeIsNotUniqueException(HTTPException):
-    def __init__(self):
-        super().__init__(
-            status_code=status.HTTP_409_CONFLICT,
-            detail='Компетенция с таким кодом уже существует.'
-        )
-
-
 class ControlTypeNotFoundException(HTTPException):
     def __init__(self):
         super().__init__(

@@ -10,6 +10,7 @@ class CompetencyCreate(BaseModel):
         max_length=511,
     )]
     competency_group_id: Annotated[int, Field(gt=0, example=1)]
+    direction_id: Annotated[int, Field(gt=0, example=1)]
 
 
 class CompetencyUpdate(BaseModel):
@@ -20,6 +21,7 @@ class CompetencyUpdate(BaseModel):
         max_length=511,
     )] = None
     competency_group_id: Annotated[int | None, Field(gt=0, example=1)] = None
+    direction_id: Annotated[int | None, Field(gt=0, example=1)] = None
 
 
 class CompetencyRead(CompetencyCreate):

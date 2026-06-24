@@ -127,11 +127,10 @@ def export_map_excel(direction_id: Annotated[int, Path(gt=0)], session: SessionD
     
     direction_educational_level = session.get(EducationalLevel, direction.educational_level_id)
     
-    direction_educational_level_name = direction_educational_level.name
-    direction_name = direction.name
-    direction_profile = direction.name[direction.name.index(" ") + 1:]  # TODO: код направления, название, профиль
+    direction_educational_level_name_in_genetive = direction_educational_level.name_in_genetive.lower()
+    direction_name = f"{direction.code} {direction.profile}"
+    direction_profile = direction.profile
 
-    
 
     wb = Workbook()
     ws = wb.active
@@ -159,7 +158,7 @@ def export_map_excel(direction_id: Annotated[int, Path(gt=0)], session: SessionD
     ]
 
     row_n = 1
-    row = [f"Компетенции и индикаторы, установленные программой {direction_educational_level_name}"]
+    row = [f"Компетенции и индикаторы, установленные программой {direction_educational_level_name_in_genetive}"]
     row[0] = Cell(ws, row=1, column="A", value=row[0])
     row[0].font = header_font
     row[0].alignment = Alignment(horizontal="center")
@@ -190,7 +189,7 @@ def export_map_excel(direction_id: Annotated[int, Path(gt=0)], session: SessionD
     competency_group_color_i = 0
     for competency_group_id, rows in rows_by_competency_group_id.items():
         competency_group = competency_group_by_id[competency_group_id]
-        row = [f"[НАЗВАНИЕ ГРУППЫ КОМПЕТЕНЦИЙ] ({competency_group.name})"]  # TODO: код и название группы компетенций
+        row = [f"{competency_group.name} ({competency_group.short_name})"]
         row[0] = Cell(ws, row=1, column="A", value=row[0])
         row[0].font = table_header_font
         row[0].alignment = Alignment(horizontal="center")
