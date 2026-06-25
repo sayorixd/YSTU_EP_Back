@@ -6,6 +6,11 @@ from src.dependencies import SessionDep
 from src.exceptions import ControlTypeNotFoundException, ControlTypeNameIsNotUniqueException
 from .model import ControlType
 from .schemas import ControlTypeCreate, ControlTypeUpdate, ControlTypeRead
+from fastapi import HTTPException
+from src.discipline_blocks.model import DisciplineBlock
+from src.disciplines.model import Discipline
+from src.direction_map_cors.model import DirectionMapCore
+from src.directions.model import Direction
 
 router = APIRouter(
     prefix='/control-types',
@@ -66,6 +71,7 @@ def update_control_type(
     responses={
         204: {'description': 'Control type successfully deleted'},
         404: {'description': 'Control type not found'},
+        409: {'description': 'Control type is in use'}
     },
     summary='Delete the control type'
 )
@@ -74,6 +80,32 @@ def delete_control_type(control_type_id: Annotated[int, Path(gt=0)], session: Se
     control_type = session.get(ControlType, control_type_id)
     if not control_type:
         raise ControlTypeNotFoundException()
+
+    # Проверяем, используется ли этот вид контроля как основной в блоках дисциплин
+    stmt = (
+        select(DisciplineBlock, Discipline, Direction)
+        .join(Discipline, DisciplineBlock.discipline_id == Discipline.id)
+        .join(DirectionMapCore, DisciplineBlock.map_core_id == DirectionMapCore.map_core_id)
+        .join(Direction, DirectionMapCore.direction_id == Direction.id)
+        .where(DisciplineBlock.control_type_id == control_type_id)
+    )
+    usages = session.execute(stmt).all()
+
+    if usages:
+        details = []
+        for block, discipline, direction in usages:
+            details.append(f"Направление «{direction.name}», дисциплина «{discipline.name}» (семестр {block.semester_number})")
+        
+        # Убираем дубликаты, сохраняя порядок
+        unique_details = list(dict.fromkeys(details))
+        
+        error_msg = (
+            f"Невозможно удалить вид контроля «{control_type.name}», так как он установлен как основной "
+            f"в следующих дисциплинах:\n" + "\n".join(f"- {d}" for d in unique_details) +
+            "\nПожалуйста, сначала измените у них основной вид контроля."
+        )
+        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=error_msg)
+
     session.delete(control_type)
     session.commit()
     return Response(status_code=status.HTTP_204_NO_CONTENT)
